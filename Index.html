@@ -1,0 +1,821 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calendário de Gestão de Tarefas - TEKSEA</title>
+    
+    <!-- Fontes Google: Montserrat -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Ícones FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        /* =========================================
+           VARIÁVEIS E RESET
+           ========================================= */
+        :root {
+            --teksea-green: #004e46;
+            --teksea-green-light: #007a6d;
+            --bg-color: #000000;
+            --card-bg: #111111;
+            --text-white: #ffffff;
+            --text-grey: #b3b3b3;
+            
+            /* Cores de Status */
+            --status-gray: #7f8c8d;   /* Fila de Produção */
+            --status-blue: #3498db;   /* Em Produção */
+            --status-pink: #e91e63;   /* Em Ajuste */
+            --status-orange: #e67e22; /* Aguardando Aprovação */
+            --status-green: #2ecc71;  /* Concluído */
+            
+            --transition-speed: 0.3s;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Montserrat', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-white);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow-x: hidden;
+        }
+
+        /* =========================================
+           CABEÇALHO
+           ========================================= */
+        header {
+            background-color: var(--teksea-green);
+            padding: 2rem 1rem;
+            text-align: center;
+            box-shadow: 0 4px 20px rgba(0, 78, 70, 0.4);
+            position: relative;
+            z-index: 10;
+        }
+
+        header h1 {
+            font-weight: 700;
+            font-size: 1.8rem;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            margin-bottom: 0.5rem;
+            animation: fadeInDown 0.8s ease-out;
+        }
+
+        header p {
+            font-size: 0.9rem;
+            color: rgba(255,255,255,0.8);
+            animation: fadeInDown 0.8s ease-out 0.2s backwards;
+        }
+
+        /* =========================================
+           ÁREA DE CONTROLE (Busca, Filtros, Botão)
+           ========================================= */
+        .controls-container {
+            max-width: 1200px;
+            margin: -30px auto 2rem;
+            padding: 0 1rem;
+            position: relative;
+            z-index: 20;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            justify-content: space-between;
+            align-items: center;
+            animation: fadeInUp 0.8s ease-out 0.4s backwards;
+        }
+
+        .search-box {
+            flex: 1;
+            min-width: 250px;
+            position: relative;
+        }
+
+        .search-box input {
+            width: 100%;
+            padding: 12px 20px 12px 45px;
+            background: rgba(30, 30, 30, 0.9);
+            border: 1px solid #333;
+            border-radius: 8px;
+            color: #fff;
+            font-size: 0.95rem;
+            transition: var(--transition-speed);
+            backdrop-filter: blur(5px);
+        }
+
+        .search-box input:focus {
+            outline: none;
+            border-color: var(--teksea-green);
+            box-shadow: 0 0 10px rgba(0, 78, 70, 0.3);
+        }
+
+        .search-box i {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--teksea-green);
+        }
+
+        .filter-group {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap; /* Permite quebra em desktop se necessário */
+            justify-content: center;
+        }
+
+        .filter-btn {
+            background: #1a1a1a;
+            border: 1px solid #333;
+            color: #fff;
+            padding: 8px 16px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: all var(--transition-speed);
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            white-space: nowrap; /* Impede quebra de texto dentro do botão */
+        }
+
+        .filter-btn:hover, .filter-btn.active {
+            background: var(--teksea-green);
+            border-color: var(--teksea-green);
+            transform: translateY(-2px);
+        }
+
+        .refresh-btn {
+            background-color: #000000;
+            color: #fff;
+            border: 1px solid #333;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transition: all var(--transition-speed);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+        }
+
+        .refresh-btn:hover {
+            background-color: var(--teksea-green);
+            transform: scale(1.05);
+            box-shadow: 0 0 15px var(--teksea-green);
+        }
+
+        .refresh-icon {
+            transition: transform 0.5s ease;
+        }
+
+        .spin {
+            animation: spin 1s linear infinite;
+        }
+
+        /* =========================================
+           GRID DE CARDS (Principal)
+           ========================================= */
+        .main-content {
+            flex: 1;
+            padding: 1rem;
+            max-width: 1400px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        .cards-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 2rem;
+            perspective: 1000px;
+        }
+
+        .task-card {
+            background-color: var(--card-bg);
+            border-radius: 12px;
+            padding: 1.5rem;
+            position: relative;
+            border-top: 4px solid transparent;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            transform-style: preserve-3d;
+            animation: fadeIn 0.5s ease-out forwards;
+            opacity: 0;
+            overflow: hidden;
+        }
+
+        .task-card:hover {
+            transform: translateY(-10px) rotateX(2deg);
+            box-shadow: 0 15px 30px rgba(0,0,0,0.7);
+        }
+
+        .task-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0) 100%);
+            pointer-events: none;
+        }
+
+        /* Cores da borda superior */
+        .status-gray .task-card  { border-color: var(--status-gray); }
+        .status-blue .task-card   { border-color: var(--status-blue); }
+        .status-pink .task-card   { border-color: var(--status-pink); }
+        .status-orange .task-card { border-color: var(--status-orange); }
+        .status-green .task-card  { border-color: var(--status-green); }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 1rem;
+        }
+
+        .task-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #fff;
+            line-height: 1.4;
+        }
+
+        .status-badge {
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #fff;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+        }
+
+        .bg-gray   { background-color: var(--status-gray); }
+        .bg-blue   { background-color: var(--status-blue); }
+        .bg-pink   { background-color: var(--status-pink); }
+        .bg-orange { background-color: var(--status-orange); }
+        .bg-green  { background-color: var(--status-green); }
+
+        .card-body {
+            display: flex;
+            flex-direction: column;
+            gap: 0.8rem;
+        }
+
+        .info-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 0.9rem;
+            color: var(--text-grey);
+        }
+
+        .info-row i {
+            color: var(--teksea-green-light);
+            width: 20px;
+            text-align: center;
+        }
+
+        .info-row span {
+            color: #ddd;
+        }
+
+        .progress-decorator {
+            height: 4px;
+            background: #222;
+            border-radius: 2px;
+            margin-top: 1rem;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .progress-bar {
+            height: 100%;
+            border-radius: 2px;
+            width: 0%;
+            transition: width 1.5s ease-in-out;
+        }
+
+        /* =========================================
+           ESTADOS DE LOADING E VAZIO
+           ========================================= */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.9);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            z-index: 1000;
+            transition: opacity 0.5s;
+        }
+
+        .spinner {
+            width: 60px;
+            height: 60px;
+            border: 4px solid rgba(0, 78, 70, 0.3);
+            border-top: 4px solid var(--teksea-green);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 1rem;
+        }
+
+        .loading-text {
+            color: var(--teksea-green);
+            font-weight: 600;
+            letter-spacing: 1px;
+            animation: pulse 1.5s infinite;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        .empty-state {
+            grid-column: 1 / -1;
+            text-align: center;
+            padding: 4rem;
+            color: var(--text-grey);
+            animation: fadeIn 0.5s;
+        }
+
+        .empty-state i {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            color: #333;
+        }
+
+        /* =========================================
+           RODAPÉ
+           ========================================= */
+        footer {
+            background-color: #0a0a0a;
+            border-top: 1px solid #222;
+            padding: 3rem 1rem;
+            margin-top: 4rem;
+        }
+
+        .footer-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 2rem;
+            text-align: center;
+        }
+
+        .footer-section h3 {
+            color: var(--teksea-green);
+            margin-bottom: 1rem;
+            font-size: 1.1rem;
+        }
+
+        .footer-section p {
+            color: var(--text-grey);
+            margin-bottom: 0.5rem;
+            font-size: 0.9rem;
+        }
+
+        .social-links {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .social-links a {
+            color: #fff;
+            background: #222;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+            text-decoration: none;
+        }
+
+        .social-links a:hover {
+            background: var(--teksea-green);
+            transform: translateY(-3px);
+        }
+
+        .copyright {
+            text-align: center;
+            margin-top: 3rem;
+            padding-top: 1rem;
+            border-top: 1px solid #222;
+            color: #555;
+            font-size: 0.85rem;
+        }
+
+        /* =========================================
+           ANIMAÇÕES E RESPONSIVIDADE
+           ========================================= */
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        @keyframes fadeIn {
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        @keyframes fadeInDown {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background-color: var(--teksea-green);
+            color: #fff;
+            padding: 1rem 1.5rem;
+            border-radius: 8px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+            transform: translateY(100px);
+            opacity: 0;
+            transition: all 0.5s;
+            z-index: 2000;
+        }
+        
+        .toast.show {
+            transform: translateY(0);
+            opacity: 1;
+        }
+
+        /* Responsividade Avançada para Dispositivos Móveis */
+        @media (max-width: 768px) {
+            header h1 { font-size: 1.4rem; }
+            
+            .controls-container {
+                flex-direction: column;
+                align-items: stretch;
+                margin-top: 1rem;
+            }
+            
+            /* Melhoria nas abas para mobile */
+            .filter-group {
+                width: 100%; /* Ocupa largura total */
+                overflow-x: auto; /* Ativa scroll horizontal */
+                padding-bottom: 10px; /* Espaço para scrollbar ou sombra */
+                white-space: nowrap; /* Impede quebra de linha nos botões */
+                justify-content: flex-start; /* Alinha à esquerda para scroll */
+                -webkit-overflow-scrolling: touch; /* Scroll suave no iOS */
+            }
+
+            /* Esconder scrollbar padrão para estética (opcional) */
+            .filter-group::-webkit-scrollbar {
+                height: 4px;
+            }
+            .filter-group::-webkit-scrollbar-thumb {
+                background: #333;
+                border-radius: 4px;
+            }
+            
+            .filter-btn {
+                flex: 0 0 auto; /* Impede que os botões encolham */
+            }
+            
+            .refresh-btn {
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Indicador de Carregamento -->
+    <div id="loading" class="loading-overlay">
+        <div class="spinner"></div>
+        <div class="loading-text">CARREGANDO DADOS...</div>
+    </div>
+
+    <!-- Cabeçalho -->
+    <header>
+        <h1>Calendário de Gestão de Entregas de Tarefas - TEKSEA</h1>
+        <p>Acompanhamento em tempo real de produção</p>
+    </header>
+
+    <!-- Controles -->
+    <div class="controls-container">
+        <div class="search-box">
+            <i class="fas fa-search"></i>
+            <input type="text" id="searchInput" placeholder="Buscar tarefa ou cliente...">
+        </div>
+        
+        <!-- Grupo de Filtros (Agora com rolagem em mobile) -->
+        <div class="filter-group">
+            <button class="filter-btn active" data-filter="all">Todos</button>
+            <!-- Os data-filter devem ser exatamente como na planilha, mas a JS lida com variação -->
+            <button class="filter-btn" data-filter="Fila de Produção">Fila</button>
+            <button class="filter-btn" data-filter="Em Produção">Produção</button>
+            <button class="filter-btn" data-filter="Em Ajuste">Ajuste</button>
+            <button class="filter-btn" data-filter="Aguardando Aprovação">Aprov.</button>
+            <button class="filter-btn" data-filter="Concluído">Concluído</button>
+        </div>
+
+        <button class="refresh-btn" id="refreshBtn">
+            <i class="fas fa-sync-alt refresh-icon" id="refreshIcon"></i>
+            Atualizar Status
+        </button>
+    </div>
+
+    <!-- Conteúdo Principal -->
+    <main class="main-content">
+        <div id="cardsContainer" class="cards-grid">
+            <!-- Os cards serão inseridos aqui via JavaScript -->
+        </div>
+    </main>
+
+    <!-- Rodapé -->
+    <footer>
+        <div class="footer-content">
+            <div class="footer-section">
+                <h3>Contato</h3>
+                <p><i class="fas fa-envelope"></i> contato@teksea.com.br</p>
+                <p><i class="fas fa-phone"></i> (11) 1234-5678</p>
+                <p><i class="fas fa-map-marker-alt"></i> Rua Exemplo, 123 - São Paulo, SP</p>
+            </div>
+            
+            <div class="footer-section">
+                <h3>TEKSEA</h3>
+                <p>Inovação e excelência em gestão de tarefas.</p>
+                <div class="social-links">
+                    <a href="#"><i class="fab fa-instagram"></i></a>
+                    <a href="#"><i class="fab fa-linkedin-in"></i></a>
+                    <a href="#"><i class="fab fa-whatsapp"></i></a>
+                </div>
+            </div>
+        </div>
+        <div class="copyright">
+            &copy; 2023 TEKSEA - Todos os direitos reservados. Desenvolvido por Alana Almeida.
+        </div>
+    </footer>
+
+    <!-- Notificação Toast -->
+    <div id="toast" class="toast">Dados atualizados com sucesso!</div>
+
+    <script>
+        /**
+         * CONFIGURAÇÕES
+         */
+        const SHEET_ID = '1uAs6eI_q1pOMJ3sSBxZzo0jmX64GFnW4p0Z4NryTb-A';
+        const SHEET_GID = '0';
+        const DATA_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&gid=${SHEET_GID}`;
+
+        let allTasks = [];
+        let currentFilter = 'all';
+        let currentSearch = '';
+
+        const statusConfig = {
+            'fila de produção': { class: 'status-gray', badge: 'bg-gray', progress: '15%' }, // Chave normalizada
+            'em produção':     { class: 'status-blue',   badge: 'bg-blue',   progress: '50%' },
+            'em ajuste':       { class: 'status-pink',   badge: 'bg-pink',   progress: '75%' },
+            'aguardando aprovação': { class: 'status-orange', badge: 'bg-orange', progress: '90%' },
+            'concluído':       { class: 'status-green',  badge: 'bg-green',  progress: '100%' }
+        };
+
+        const cardsContainer = document.getElementById('cardsContainer');
+        const loadingOverlay = document.getElementById('loading');
+        const refreshBtn = document.getElementById('refreshBtn');
+        const refreshIcon = document.getElementById('refreshIcon');
+        const searchInput = document.getElementById('searchInput');
+        const filterBtns = document.querySelectorAll('.filter-btn');
+        const toast = document.getElementById('toast');
+
+        /* =========================================
+           FUNÇÕES DE DADOS
+           ========================================= */
+        
+        const mockData = [
+            { tarefa: "Desenvolvimento Site Institucional", inicio: "2023-10-01", entrega: "2023-10-15", fechamento: "-", status: "Em Produção" },
+            { tarefa: "Campanha Redes Sociais - Outubro", inicio: "2023-10-05", entrega: "2023-10-31", fechamento: "-", status: "Fila de Produção" },
+            { tarefa: "Logo Design - Startup Tech", inicio: "2023-09-20", entrega: "2023-09-25", fechamento: "2023-09-25", status: "Concluído" },
+            { tarefa: "Ajustes Layout App Mobile", inicio: "2023-10-10", entrega: "2023-10-12", fechamento: "-", status: "Em Ajuste" },
+            { tarefa: "Apresentação Pitch Deck", inicio: "2023-09-28", entrega: "2023-10-02", fechamento: "-", status: "Aguardando Aprovação" },
+            { tarefa: "SEO Otimização Blog", inicio: "2023-10-15", entrega: "2023-10-20", fechamento: "-", status: "Fila de Produção" }
+        ];
+
+        async function fetchTasks() {
+            showLoading(true);
+            
+            try {
+                const response = await fetch(DATA_URL);
+                if (!response.ok) throw new Error("Falha na rede");
+                
+                const csvText = await response.text();
+                allTasks = parseCSV(csvText);
+                
+                showToast("Dados atualizados da Planilha Google!");
+            } catch (error) {
+                console.warn("Erro ao acessar planilha. Usando dados de demonstração.", error);
+                setTimeout(() => {
+                    allTasks = mockData;
+                    showToast("Modo Demonstração (Dados Mockados)");
+                }, 1000);
+            } finally {
+                setTimeout(() => {
+                    showLoading(false);
+                    renderTasks();
+                }, 1500);
+            }
+        }
+
+        function parseCSV(csvText) {
+            const lines = csvText.trim().split('\n');
+            // Assumindo que a primeira linha é cabeçalho
+            if(lines.length < 2) return [];
+            
+            const data = [];
+
+            for (let i = 1; i < lines.length; i++) {
+                // Regex para lidar com vírgulas dentro de aspas
+                const row = lines[i].split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(c => c.trim().replace(/^"|"$/g, ''));
+                
+                // Mapeamento simples baseado na estrutura anterior: Tarefa(0), Inicio(1), Entrega(2), Fechamento(3), Status(4)
+                if (row.length >= 5) {
+                    data.push({
+                        tarefa: row[0],
+                        inicio: formatDate(row[1]),
+                        entrega: formatDate(row[2]),
+                        fechamento: row[3] ? formatDate(row[3]) : '-',
+                        status: row[4] // Mantemos o status original para comparação normalizada
+                    });
+                }
+            }
+            return data;
+        }
+
+        function formatDate(dateString) {
+            if (!dateString || dateString === '-') return '-';
+            if (dateString.includes('/')) return dateString;
+            const parts = dateString.split('-');
+            if (parts.length !== 3) return dateString;
+            return `${parts[2]}/${parts[1]}/${parts[0]}`;
+        }
+
+        /* =========================================
+           RENDERIZAÇÃO UI (COM CORREÇÃO DE FILTRO)
+           ========================================= */
+
+        function renderTasks() {
+            cardsContainer.innerHTML = '';
+            
+            const filteredTasks = allTasks.filter(task => {
+                // NORMALIZAÇÃO: Remove espaços extras e converte para minúsculas antes de comparar
+                const normalizedStatus = task.status.trim().toLowerCase();
+                const normalizedFilter = currentFilter === 'all' ? 'all' : currentFilter.trim().toLowerCase();
+                const normalizedSearch = currentSearch.toLowerCase();
+
+                const matchesFilter = normalizedFilter === 'all' || normalizedStatus === normalizedFilter;
+                const matchesSearch = task.tarefa.toLowerCase().includes(normalizedSearch);
+
+                return matchesFilter && matchesSearch;
+            });
+
+            // Ordenação
+            filteredTasks.sort((a, b) => {
+                return new Date(b.entrega.split('/').reverse().join('/')) - new Date(a.entrega.split('/').reverse().join('/'));
+            });
+
+            if (filteredTasks.length === 0) {
+                cardsContainer.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-inbox"></i>
+                        <h3>Nenhuma tarefa encontrada para "${currentFilter}"</h3>
+                        <p>Verifique se o status na planilha coincide com o filtro.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            filteredTasks.forEach((task, index) => {
+                // Encontrar config baseando-se no status normalizado
+                const normalizedStatus = task.status.trim().toLowerCase();
+                const config = statusConfig[normalizedStatus] || { class: 'status-gray', badge: 'bg-gray', progress: '0%' };
+                
+                const card = document.createElement('div');
+                card.className = `task-card-wrapper ${config.class}`;
+                card.style.animationDelay = `${index * 0.1}s`;
+                
+                card.innerHTML = `
+                    <div class="task-card">
+                        <div class="card-header">
+                            <h3 class="task-title">${task.tarefa}</h3>
+                            <span class="status-badge ${config.badge}">${task.status}</span>
+                        </div>
+                        <div class="card-body">
+                            <div class="info-row">
+                                <i class="far fa-calendar-alt"></i>
+                                <span>Início: <strong>${task.inicio}</strong></span>
+                            </div>
+                            <div class="info-row">
+                                <i class="fas fa-flag-checkered"></i>
+                                <span>Entrega: <strong>${task.entrega}</strong></span>
+                            </div>
+                            <div class="info-row">
+                                <i class="fas fa-check-circle"></i>
+                                <span>Fechamento: ${task.fechamento}</span>
+                            </div>
+                            <div class="progress-decorator">
+                                <div class="progress-bar" style="width: 0; background-color: var(--teksea-green-light)"></div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                cardsContainer.appendChild(card);
+
+                setTimeout(() => {
+                    const bar = card.querySelector('.progress-bar');
+                    if(bar) bar.style.width = config.progress;
+                }, 100);
+            });
+        }
+
+        /* =========================================
+           INTERATIVIDADE
+           ========================================= */
+
+        function showLoading(show) {
+            if (show) {
+                loadingOverlay.classList.remove('hidden');
+            } else {
+                loadingOverlay.classList.add('hidden');
+            }
+        }
+
+        function showToast(message) {
+            toast.textContent = message;
+            toast.classList.add('show');
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3000);
+        }
+
+        refreshBtn.addEventListener('click', () => {
+            refreshIcon.classList.add('spin');
+            fetchTasks().finally(() => {
+                setTimeout(() => refreshIcon.classList.remove('spin'), 1000);
+            });
+        });
+
+        searchInput.addEventListener('input', (e) => {
+            currentSearch = e.target.value;
+            renderTasks();
+        });
+
+        filterBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                filterBtns.forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                
+                // Atualiza estado com o valor exato do botão
+                currentFilter = btn.getAttribute('data-filter');
+                
+                // Imprime no console para debug (ajuda a saber o que está sendo clicado)
+                console.log("Filtro selecionado:", currentFilter);
+                
+                renderTasks();
+            });
+        });
+
+        document.addEventListener('DOMContentLoaded', () => {
+            fetchTasks();
+        });
+
+    </script>
+</body>
+</html>
